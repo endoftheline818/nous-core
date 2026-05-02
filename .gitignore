@@ -1,0 +1,16 @@
+.venv/
+pipeline/.venv/
+app/.venv/
+models/
+data/
+logs/
+__pycache__/
+*.pyc
+*.bak_*
+*.bak
+*.bak.*
+.DS_Store
+/mnt/
+.claude/
+*.backup.*
+*.backup
