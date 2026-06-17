@@ -126,8 +126,8 @@ prompt_val() {   # prompt_val "Prompt" "default" → sætter REPLY
 prompt_val "Dit navn (vises i Legacy-mode svar)"   "Dit Navn";    CFG_OWNER_NAME="$REPLY"
 prompt_val "Ollama URL (LLM-inferens)"              "http://localhost:11434"; CFG_OLLAMA_URL="$REPLY"
 prompt_val "Qdrant URL"                             "http://localhost:6333"; CFG_QDRANT_URL="$REPLY"
-prompt_val "Dag-model (hurtig, altid i RAM)"        "qwen2.5:7b";   CFG_LLM_DAY="$REPLY"
-prompt_val "Nat-model (stor, on-demand)"            "qwen3:14b";    CFG_LLM_NIGHT="$REPLY"
+prompt_val "Dag-model (hurtig, altid i RAM)"        "qwen3:8b";   CFG_LLM_DAY="$REPLY"
+prompt_val "Nat-model (stor, on-demand)"            "qwen3:8b";    CFG_LLM_NIGHT="$REPLY"
 prompt_val "Embed-model"                            "nomic-embed-text"; CFG_EMBED="$REPLY"
 
 if $FEAT_VOICE; then
