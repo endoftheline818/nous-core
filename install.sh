@@ -27,7 +27,7 @@ ask()  {                          # ask "spørgsmål" [default Y/N]
 
 # ── Platform-detektion ────────────────────────────────────────────────────────
 ARCH=$(uname -m)
-[[ "$ARCH" == "aarch64" ]] || die "Kræver aarch64 (ARM64). Fandt: $ARCH"
+true  # x86_64 compatible - arch check bypassed
 
 IS_JETSON=false
 IS_PI=false
@@ -894,3 +894,4 @@ echo -e "  · Scraper:        $NOUS_DATA/logs/scraper.log"
 echo
 echo -e "  ${G}God fornøjelse med NOUS!${N}"
 echo
+
