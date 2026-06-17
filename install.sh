@@ -791,7 +791,7 @@ if $FEAT_VOICE; then
   # Installer piper binary hvis det mangler
   if ! command -v piper &>/dev/null && [[ ! -x "$NOUS_DIR/pipeline/.venv/bin/piper" ]]; then
     info "Downloader piper-tts binary …"
-    PIPER_URL="https://github.com/rhasspy/piper/releases/latest/download/piper_linux_aarch64.tar.gz"
+    PIPER_URL="https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz"
     TMP_PIPER=$(mktemp -d)
     curl -fsSL --retry 3 "$PIPER_URL" -o "$TMP_PIPER/piper.tar.gz" 2>/dev/null && \
     tar -xzf "$TMP_PIPER/piper.tar.gz" -C "$TMP_PIPER" 2>/dev/null && \
