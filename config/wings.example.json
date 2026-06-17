@@ -1,28 +1,28 @@
 {
   "wings": [
     {
-      "name": "household",
+      "name": "familie",
       "scope": "PRIVATE",
-      "collection": "household_private",
-      "importance": "normal"
+      "collection": "familie_private",
+      "importance": 1
     },
     {
-      "name": "legal",
+      "name": "jura",
       "scope": "PRIVATE",
-      "collection": "legal_private",
-      "importance": "high"
+      "collection": "jura_private",
+      "importance": 2
     },
     {
-      "name": "personal",
+      "name": "dans_profil",
       "scope": "PRIVATE",
-      "collection": "personal_private",
-      "importance": "normal"
+      "collection": "dans_profil_private",
+      "importance": 3
     },
     {
       "name": "work",
       "scope": "SWARM",
       "collection": "work_swarm",
-      "importance": "normal"
+      "importance": 4
     }
   ]
 }

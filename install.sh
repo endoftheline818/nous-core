@@ -385,7 +385,9 @@ if [[ ! -f "$WINGS_FILE" ]]; then
     cat > "$WINGS_FILE" <<'EOF'
 {
   "wings": [
-    {"name": "mit_arkiv", "scope": "PRIVATE", "collection": "mit_arkiv_private", "subcategories": []}
+    {"name": "familie", "scope": "PRIVATE", "collection": "familie_private"},
+    {"name": "jura", "scope": "PRIVATE", "collection": "jura_private"},
+    {"name": "dans_profil", "scope": "PRIVATE", "collection": "dans_profil_private"}
   ]
 }
 EOF
