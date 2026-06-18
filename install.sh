@@ -508,6 +508,7 @@ ok "nous-qdrant.service oprettet."
 
 # ── Core: API + Arbiter ───────────────────────────────────────────────────────
 install_service nous-api.service     "$NOUS_DIR/api/nous-api.service"
+install_service nous-web.service     "$NOUS_DIR/scripts/nous-web.service"
 install_service nous-arbiter.service "$NOUS_DIR/arbiter/nous-arbiter.service"
 
 # ── Night pipeline + scraper ──────────────────────────────────────────────────
@@ -674,6 +675,7 @@ curl -sf http://localhost:6333/healthz >/dev/null 2>&1 && ok "Qdrant klar." || w
 
 enable_and_start nous-arbiter.service
 enable_and_start nous-api.service
+enable_and_start nous-web.service
 
 if $FEAT_SWARM; then
   enable_and_start nous-swarm.service

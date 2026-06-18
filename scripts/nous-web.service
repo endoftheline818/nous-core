@@ -1,0 +1,17 @@
+[Unit]
+Description=NOUS Web Cockpit
+After=network.target nous-api.service
+Wants=nous-api.service
+
+[Service]
+Type=simple
+User=nous
+WorkingDirectory=/srv/nous/web
+ExecStart=/usr/bin/python3 -m http.server 8888 --bind 0.0.0.0
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
