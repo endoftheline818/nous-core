@@ -27,23 +27,32 @@ ask()  {                          # ask "spørgsmål" [default Y/N]
 
 # ── Platform-detektion ────────────────────────────────────────────────────────
 ARCH=$(uname -m)
-true  # x86_64 compatible - arch check bypassed
 
 IS_JETSON=false
 IS_PI=false
-if [[ -f /etc/nv_tegra_release ]] || grep -qi "tegra\|jetson" /proc/device-tree/compatible 2>/dev/null; then
-  IS_JETSON=true
-elif grep -qi "Raspberry Pi\|BCM2712" /proc/cpuinfo 2>/dev/null || \
-     grep -qi "rpi\|raspberry" /proc/device-tree/model 2>/dev/null; then
-  IS_PI=true
+IS_X86=false
+
+if [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
+  if [[ -f /etc/nv_tegra_release ]] || grep -qi "tegra\|jetson" /proc/device-tree/compatible 2>/dev/null; then
+    IS_JETSON=true
+  elif grep -qi "Raspberry Pi\|BCM2712" /proc/cpuinfo 2>/dev/null || \
+       grep -qi "rpi\|raspberry" /proc/device-tree/model 2>/dev/null; then
+    IS_PI=true
+  fi
+elif [[ "$ARCH" == "x86_64" || "$ARCH" == "amd64" ]]; then
+  IS_X86=true
+else
+  die "Ikke-understøttet arkitektur: $ARCH. Understøttet: aarch64, arm64, x86_64, amd64"
 fi
 
 if $IS_JETSON; then
   PLATFORM="Jetson Orin NX (JetPack)"
 elif $IS_PI; then
   PLATFORM="Raspberry Pi 5"
+elif $IS_X86; then
+  PLATFORM="Generic x86_64 Linux"
 else
-  PLATFORM="Ukendt aarch64"
+  PLATFORM="Generisk aarch64"
   warn "Platform ikke genkendt — fortsætter som generisk aarch64."
 fi
 
@@ -275,7 +284,7 @@ pip_install "$PIPELINE_VENV" \
   "fastapi>=0.115.0" \
   "uvicorn[standard]>=0.30.0" \
   "httpx>=0.27.0" \
-  "qdrant-client>=1.11.0" \
+  "qdrant-client>=1.16,<1.18" \
   "watchdog>=6.0.0" \
   "pydantic>=2.0.0" \
   "python-multipart" \
