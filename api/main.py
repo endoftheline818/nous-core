@@ -45,7 +45,6 @@ from middleware import ScopeMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
-
 # Redact sensitive headers/keys from all log output
 class _SensitiveFilter(logging.Filter):
     _PATTERNS = ("api_key", "x-api-key", "authorization", "bearer sk-", "bearer gsk_", "bearer claude")
@@ -61,7 +60,7 @@ logging.root.addFilter(_SensitiveFilter())
 QDRANT_URL   = os.environ.get("NOUS_QDRANT_URL",   "http://localhost:6333")
 ARBITER_URL  = os.environ.get("NOUS_ARBITER_URL", "http://localhost:8010")
 OLLAMA_URL = os.environ.get("NOUS_OLLAMA_URL",  "http://localhost:11434")
-LLM_MODEL  = os.environ.get("NOUS_LLM_MODEL",   "qwen2.5:7b")
+LLM_MODEL  = os.environ.get("NOUS_LLM_MODEL",   "qwen3:8b")
 LLM_14B    = os.environ.get("NOUS_LLM_14B",     "qwen3:14b")
 EMBED_MODEL = os.environ.get("NOUS_EMBED_MODEL", "nomic-embed-text")
 INCOMING_DIR  = Path(os.environ.get("NOUS_INCOMING_DIR", "/home/nous/incoming"))
@@ -80,6 +79,50 @@ EXTERNAL_KEYS_FILE = Path("/mnt/nous-data/external_keys.json")
 # Ejer-navn bruges i Legacy-mode svar til børn — sæt via NOUS_OWNER_NAME
 _OWNER_NAME = os.environ.get("NOUS_OWNER_NAME", "Admin")
 
+# === Collection configuration ===
+# Danish collection names remain the default for backwards compatibility.
+# Users can override these through /srv/nous/.env without patching Python code.
+
+def _csv_env(name: str, default: str) -> set[str]:
+    raw = os.environ.get(name, default)
+    return {item.strip() for item in raw.split(",") if item.strip()}
+
+
+COLLECTION_BOERNESAG = os.environ.get("NOUS_COLLECTION_BOERNESAG", "boernesag_secret")
+COLLECTION_FBF = os.environ.get("NOUS_COLLECTION_FBF", "fbf_data_private")
+COLLECTION_LEGAL = os.environ.get("NOUS_COLLECTION_LEGAL", "jura_private")
+COLLECTION_LEGACY = os.environ.get("NOUS_COLLECTION_LEGACY", "dans_profil_private")
+COLLECTION_FAMILY = os.environ.get("NOUS_COLLECTION_FAMILY", "familie_private")
+COLLECTION_PROJECT = os.environ.get("NOUS_COLLECTION_PROJECT", "nous_projekt_swarm")
+COLLECTION_SWARM_PUBLIC = os.environ.get("NOUS_COLLECTION_SWARM_PUBLIC", "swarm_public")
+
+LEGAL_COLLECTIONS = _csv_env(
+    "NOUS_LEGAL_COLLECTIONS",
+    ",".join([COLLECTION_BOERNESAG, COLLECTION_FBF, COLLECTION_LEGAL]),
+)
+
+LEGACY_COLLECTIONS = _csv_env(
+    "NOUS_LEGACY_COLLECTIONS",
+    COLLECTION_LEGACY,
+)
+
+MEMORY_WING_KEYWORDS: dict[str, list[str]] = {
+    COLLECTION_BOERNESAG: ["afgørelse", "dom", "samvær", "forældremyndighed", "ankestyrelse", "fogedret", "familieretten"],
+    COLLECTION_LEGAL: ["juridisk", "advokat", "paragraf", "§", "klage"],
+    COLLECTION_FAMILY: ["familie", "børn", "barn", "datter", "søn", "søster", "bror", "nevø", "niece", "bedste", "mormor", "morfar", "farmor", "farfar"],
+    COLLECTION_PROJECT: ["nous", "projekt", "llm", "qdrant", "pipeline", "kode", "assistent"],
+}
+
+MEMORY_WING_SCOPES: dict[str, str] = {
+    COLLECTION_LEGACY: "PRIVATE",
+    COLLECTION_FAMILY: "PRIVATE",
+    COLLECTION_BOERNESAG: "SECRET",
+    COLLECTION_LEGAL: "PRIVATE",
+    COLLECTION_FBF: "PRIVATE",
+    COLLECTION_PROJECT: "SWARM",
+}
+
+
 _scraper_status:   dict[str, dict] = {}
 _research_status:  dict[str, dict] = {}
 _upload_status:    dict[str, dict] = {}
@@ -97,8 +140,6 @@ LEGACY_TRIGGERS = [
     "hvad ville far", "far kan du", "fortæl om far", "hvad siger far",
     "hvad tænker far", "far mener", "hvad sagde far", "tal som far",
 ]
-LEGAL_COLLECTIONS     = {"boernesag_secret", "fbf_data_private", "jura_private"}
-LEGACY_COLLECTIONS    = {"dans_profil_private"}
 
 LEGAL_SYSTEM = """Du er en juridisk analytiker specialiseret i forældreansvarssager og myndighedssager.
 Identificer afgørelser, lovgrundlag og mønstre. Citér præcist fra kilderne.
@@ -175,23 +216,9 @@ _MEMORY_RE = re.compile(
     r"\s+(.+)",
     re.IGNORECASE | re.DOTALL,
 )
-_MEMORY_WING_KEYWORDS: dict[str, list[str]] = {
-    "boernesag_secret":    ["afgørelse", "dom", "samvær", "forældremyndighed", "ankestyrelse", "fogedret", "familieretten"],
-    "jura_private":        ["juridisk", "advokat", "paragraf", "§", "klage"],
-    "familie_private":     ["familie", "børn", "barn", "datter", "søn", "søster", "bror", "nevø", "niece", "bedste", "mormor", "morfar", "farmor", "farfar"],
-    "nous_projekt_swarm":  ["nous", "projekt", "llm", "qdrant", "pipeline", "kode", "assistent"],
-}
-_MEMORY_WING_SCOPES: dict[str, str] = {
-    "dans_profil_private": "PRIVATE",
-    "familie_private":     "PRIVATE",
-    "boernesag_secret":    "SECRET",
-    "jura_private":        "PRIVATE",
-    "fbf_data_private":    "PRIVATE",
-    "nous_projekt_swarm":  "SWARM",
-}
 
 async def _warmup_models():
-    """Pre-warm qwen2.5:7b ved opstart — første svar efter genstart er ~30-60 sek på NX."""
+    """Pre-warm the configured day model at startup."""
     try:
         async with httpx.AsyncClient() as client:
             await client.post(
@@ -204,7 +231,7 @@ async def _warmup_models():
                 },
                 timeout=120,
             )
-        logger.info("qwen2.5:7b pre-warmed og klar")
+        logger.info("%s pre-warmed og klar", LLM_MODEL)
     except Exception as e:
         logger.warning("Pre-warm fejlede (ikke kritisk): %s", e)
 
@@ -542,8 +569,8 @@ def _detect_memory_intent(query: str) -> tuple[str, str] | None:
         return None
     content = m.group(1).strip()
     content_lower = content.lower()
-    collection = "dans_profil_private"
-    for coll, keywords in _MEMORY_WING_KEYWORDS.items():
+    collection = COLLECTION_LEGACY
+    for coll, keywords in MEMORY_WING_KEYWORDS.items():
         if any(kw in content_lower for kw in keywords):
             collection = coll
             break
@@ -562,7 +589,7 @@ def _save_direct_memory(collection: str, content: str) -> bool:
         vector = embed_r.json()["embedding"]
     except Exception:
         return False
-    scope = _MEMORY_WING_SCOPES.get(collection, "PRIVATE")
+    scope = MEMORY_WING_SCOPES.get(collection, "PRIVATE")
     point = {
         "id":      str(uuid.uuid4()),
         "vector":  vector,

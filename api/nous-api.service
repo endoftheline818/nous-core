@@ -1,19 +1,21 @@
 [Unit]
 Description=NOUS API Backend
-After=network.target docker.service
-Wants=docker.service
+After=network.target
 
 [Service]
 Type=simple
 User=nous
 WorkingDirectory=/srv/nous/api
+# We define variables directly here, so we don't need a missing .env file
+Environment=PYTHONPATH=/srv/nous:/srv/nous/api
 Environment=PATH=/srv/nous/pipeline/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-Environment=NOUS_LLM_MODEL=qwen3:8b
-ExecStart=/srv/nous/pipeline/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+EnvironmentFile=-/srv/nous/.env
+# Add any required vars here instead of EnvironmentFile if you don't have a file
+# Environment=NOUS_LLM_MODEL=qwen2.5:7b 
+
+ExecStart=/srv/nous/pipeline/.venv/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=5
-StandardOutput=journal
-StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
